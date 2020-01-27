@@ -2,7 +2,7 @@ package go39
 
 import (
 	"bufio"
-	"bytes"
+	"fmt"
 	"net"
 	"strconv"
 
@@ -25,11 +25,12 @@ const (
 
 //Connection to fill out later
 type Connection struct {
-	writeBuffer    bytes.Buffer
-	readBuffer     bytes.Buffer
+	netIO          NetIO
 	socket         net.Listener
+	netConnection  net.Conn
 	connectionType ConnectionType
-	sockets        map[string]*net.Conn
+	connectionID   string
+	connections    map[string]*Connection
 }
 
 //TCPListen - listen
@@ -42,12 +43,12 @@ func (c *Connection) TCPListen(host string, port int) {
 	}
 	c.socket = l
 	c.connectionType = TCPServer
-	c.sockets = make(map[string]*net.Conn)
+	c.connections = make(map[string]*Connection)
 	log.Infof("Listening on host, %s , port, %d", host, port)
 }
 
 //TCPAccept - accept a connection
-func (c *Connection) TCPAccept() (socketID string) {
+func (c *Connection) TCPAccept() (connectionID string) {
 	ln, err := c.socket.Accept()
 
 	if err != nil {
@@ -56,26 +57,127 @@ func (c *Connection) TCPAccept() (socketID string) {
 	}
 	log.Info(ln)
 	log.Info("New Connection")
-	socketID = c.addSocket(&ln)
+	connectionID = c.addConnectionTCP(ln)
 	return
 }
 
-func (c *Connection) addSocket(socket *net.Conn) (socketID string) {
+func (c *Connection) addConnectionTCP(connection net.Conn) (connectionID string) {
 
-	if c.sockets == nil {
+	if c.connections == nil {
 		log.Fatal("Cannot add socket! the map is nil!")
 	}
 
-	socketID = utils.GenerateSocketID()
-	log.Tracef("Adding socket with id %s", socketID)
-	c.sockets[socketID] = socket
+	connectionID = utils.GenerateConnectionID()
+	log.Tracef("Adding socket with id %s", connectionID)
+	c.connections[connectionID] = &Connection{
+		connectionType: TCPClient,
+		connectionID:   connectionID,
+		netConnection:  connection,
+	}
 	return
 }
 
+func (c *Connection) getConnection(connectionID string) (connection *Connection, err error) {
+	if val, ok := c.connections[connectionID]; ok {
+		connection = val
+		return
+	} else {
+		err = fmt.Errorf("%s connection does not exist", connectionID)
+		return
+	}
+}
+
 //ReceiveMessage TODO
-func (c *Connection) ReceiveMessage(socketID string) {
-	log.Infof("Reading from socket with ID %s", socketID)
-	socket := c.sockets[socketID]
-	reader := bufio.NewReader(*socket)
-	c.readBuffer.ReadFrom(reader)
+func (c *Connection) ReceiveMessage(connectionID string) {
+	log.Infof("Reading from connection with ID %s", connectionID)
+	conn := c.connections[connectionID]
+	reader := bufio.NewReader(conn.netConnection)
+	conn.netIO.readBuffer.ReadFrom(reader)
+}
+
+//PopString Readstring
+func (c *Connection) PopString(connectionID string) (str string) {
+	log.Infof("Reading string in conn with ID %s ", connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf("Failed to read string from conn with ID %s", connectionID)
+		return
+	}
+
+	str = conn.netIO.PopString()
+	return
+}
+
+//PopInt Readint
+func (c *Connection) PopInt(connectionID string) (val int) {
+	log.Infof("Reading int in conn with ID %s ", connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf("Failed to read int from conn with ID %s", connectionID)
+		return
+	}
+
+	val = conn.netIO.PopInt()
+	return
+}
+
+//PopByte readbyte
+func (c *Connection) PopByte(connectionID string) (val int) {
+	log.Infof("Reading byte in conn with ID %s ", connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf("Failed to read byte from conn with ID %s", connectionID)
+		return
+	}
+
+	val = conn.netIO.PopByte()
+	return
+}
+
+//PushString TODO
+func (c *Connection) PushString(connectionID string, str string) {
+	log.Infof("Pushing string %s to %s buffers", str, connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf("Failed to write string conn with ID %s", connectionID)
+		return
+	}
+
+	conn.netIO.PushString(str)
+}
+
+//PushInt TODO
+func (c *Connection) PushInt(connectionID string, val int) {
+	log.Infof("Pushing int %d to %s buffers", val, connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf("Failed to write int conn with ID %s", connectionID)
+		return
+	}
+
+	conn.netIO.PushInt(val)
+}
+
+//PushByte TODO
+func (c *Connection) PushByte(connectionID string, val int) {
+	log.Infof("Pushing byte %d to %s buffers", val, connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf("Failed to write byte conn with ID %s", connectionID)
+		return
+	}
+
+	conn.netIO.PushByte(val)
+}
+
+//ClearWriteBuffer TODO
+func (c *Connection) ClearWriteBuffer(connectionID string) {
+	log.Infof("Clearing %s write buffers", connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf("Failed to clear writebuffer conn with ID %s", connectionID)
+		return
+	}
+
+	conn.netIO.ClearWriteBuffer()
 }

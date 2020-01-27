@@ -16,6 +16,6 @@ func main() {
 		id := connection.TCPAccept()
 		logrus.Info(id)
 		connection.ReceiveMessage(id)
-		fmt.Println(connection.PopString())
+		fmt.Println(connection.PopString(id))
 	}
 }

@@ -12,7 +12,7 @@ func randStringBytes(n int) string {
 	return string(b)
 }
 
-//GenerateSocketID return a random socket id
-func GenerateSocketID() string {
-	return "sock-" + randStringBytes(10)
+//GenerateConnectionID return a random connection id
+func GenerateConnectionID() string {
+	return "conn-" + randStringBytes(10)
 }
