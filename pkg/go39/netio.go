@@ -58,11 +58,14 @@ func (n *NetIO) PopByte() int {
 
 //PopInt - read int
 func (n *NetIO) PopInt() int {
-	val, _, err := n.readBuffer.ReadRune()
-	if err != nil {
-		log.Warn("Read int failed")
-	}
-	return int(val)
+	b1 := (n.PopByte() & 0xFF) << 24
+	b2 := (n.PopByte() & 0xFF) << 16
+	b3 := (n.PopByte() & 0xFF) << 8
+	b4 := (n.PopByte() & 0xFF)
+
+	res := b1 | b2 | b3 | b4
+
+	return res
 }
 
 //PopString - read string
