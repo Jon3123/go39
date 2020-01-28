@@ -1,7 +1,7 @@
 package go39
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"net"
 	"strconv"
@@ -21,6 +21,8 @@ const (
 	TCPClient ConnectionType = 0
 	//TCPServer this is a server
 	TCPServer ConnectionType = 1
+	//MaxTransmitSize max count of bytes you are allowed to send
+	MaxTransmitSize int = 1024
 )
 
 //Connection to fill out later
@@ -35,7 +37,7 @@ type Connection struct {
 
 //TCPListen - listen
 func (c *Connection) TCPListen(host string, port int) {
-	log.SetLevel(logrus.TraceLevel)
+	log.SetLevel(logrus.DebugLevel)
 
 	l, err := net.Listen("tcp", host+":"+strconv.Itoa(port))
 
@@ -43,8 +45,11 @@ func (c *Connection) TCPListen(host string, port int) {
 		log.Fatalf("Failed to listen error: %s", err)
 	}
 	c.socket = l
+
 	c.connectionType = TCPServer
 	c.connections = make(map[string]*Connection)
+	c.connectionID = utils.GenerateConnectionID()
+	c.connections[c.connectionID] = c
 	log.Infof("Listening on host, %s , port, %d", host, port)
 }
 
@@ -88,17 +93,29 @@ func (c *Connection) getConnection(connectionID string) (connection *Connection,
 }
 
 //ReceiveMessage TODO
-func (c *Connection) ReceiveMessage(connectionID string) (bytesRead int) {
+func (c *Connection) ReceiveMessage(connectionID string) (bytesRead int32) {
 	log.Tracef("Reading from connection with ID %s", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("error getting connection: %s", err.Error())
 	}
-	reader := bufio.NewReader(conn.netConnection)
-	conn.netIO.readBuffer.Reset()
-	conn.netIO.readBuffer.ReadFrom(reader)
+	b := make([]byte, MaxTransmitSize)
+	_, err = conn.netConnection.Read(b)
+	if err != nil {
+		log.Warnf("error reading from connection %s: %s", connectionID, err.Error())
+	}
+	reader := bytes.NewReader(b)
+	conn.netIO.ClearReadBuffer()
+
+	_, err = conn.netIO.readBuffer.ReadFrom(reader)
+	if err != nil {
+		log.Warnf("error while reading %s: %s", connectionID, err.Error())
+
+	}
+
 	bytesRead = c.PopByte(connectionID)
 	c.PopByte(connectionID)
+
 	return
 }
 
@@ -116,7 +133,7 @@ func (c *Connection) PopString(connectionID string) (str string) {
 }
 
 //PopInt Readint
-func (c *Connection) PopInt(connectionID string) (val int) {
+func (c *Connection) PopInt(connectionID string) (val int32) {
 	log.Tracef("Reading int in conn with ID %s ", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
@@ -129,7 +146,7 @@ func (c *Connection) PopInt(connectionID string) (val int) {
 }
 
 //PopByte readbyte
-func (c *Connection) PopByte(connectionID string) (val int) {
+func (c *Connection) PopByte(connectionID string) (val int32) {
 	log.Tracef("Reading byte in conn with ID %s ", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
@@ -154,7 +171,7 @@ func (c *Connection) PushString(connectionID string, str string) {
 }
 
 //PushInt TODO
-func (c *Connection) PushInt(connectionID string, val int) {
+func (c *Connection) PushInt(connectionID string, val int32) {
 	log.Tracef("Pushing int %d to %s buffers", val, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
@@ -166,7 +183,7 @@ func (c *Connection) PushInt(connectionID string, val int) {
 }
 
 //PushByte TODO
-func (c *Connection) PushByte(connectionID string, val int) {
+func (c *Connection) PushByte(connectionID string, val int32) {
 	log.Tracef("Pushing byte %d to %s buffers", val, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
@@ -187,4 +204,19 @@ func (c *Connection) ClearWriteBuffer(connectionID string) {
 	}
 
 	conn.netIO.ClearWriteBuffer()
+}
+
+//SendMessage send message
+func (c *Connection) SendMessage(connectionID string) {
+	log.Tracef("Sending message to %s", connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf("Failed to send message to %s", connectionID)
+	}
+	conn.netIO.PrepWriteBuffer()
+	_, err = conn.netConnection.Write(conn.netIO.writeBuffer.Bytes())
+	if err != nil {
+		log.Warnf("error sending message %s", err.Error())
+	}
+
 }
