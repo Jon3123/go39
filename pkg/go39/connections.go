@@ -35,11 +35,12 @@ type Connection struct {
 
 //TCPListen - listen
 func (c *Connection) TCPListen(host string, port int) {
+	log.SetLevel(logrus.TraceLevel)
+
 	l, err := net.Listen("tcp", host+":"+strconv.Itoa(port))
 
 	if err != nil {
-		log.Info(err)
-		log.Fatal("Failed to listen")
+		log.Fatalf("Failed to listen error: %s", err)
 	}
 	c.socket = l
 	c.connectionType = TCPServer
@@ -81,23 +82,29 @@ func (c *Connection) getConnection(connectionID string) (connection *Connection,
 	if val, ok := c.connections[connectionID]; ok {
 		connection = val
 		return
-	} else {
-		err = fmt.Errorf("%s connection does not exist", connectionID)
-		return
 	}
+	err = fmt.Errorf("%s connection does not exist", connectionID)
+	return
 }
 
 //ReceiveMessage TODO
-func (c *Connection) ReceiveMessage(connectionID string) {
-	log.Infof("Reading from connection with ID %s", connectionID)
-	conn := c.connections[connectionID]
+func (c *Connection) ReceiveMessage(connectionID string) (bytesRead int) {
+	log.Tracef("Reading from connection with ID %s", connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	reader := bufio.NewReader(conn.netConnection)
+	conn.netIO.readBuffer.Reset()
 	conn.netIO.readBuffer.ReadFrom(reader)
+	bytesRead = c.PopByte(connectionID)
+	c.PopByte(connectionID)
+	return
 }
 
 //PopString Readstring
 func (c *Connection) PopString(connectionID string) (str string) {
-	log.Infof("Reading string in conn with ID %s ", connectionID)
+	log.Tracef("Reading string in conn with ID %s ", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
 		log.Warnf("Failed to read string from conn with ID %s", connectionID)
@@ -110,7 +117,7 @@ func (c *Connection) PopString(connectionID string) (str string) {
 
 //PopInt Readint
 func (c *Connection) PopInt(connectionID string) (val int) {
-	log.Infof("Reading int in conn with ID %s ", connectionID)
+	log.Tracef("Reading int in conn with ID %s ", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
 		log.Warnf("Failed to read int from conn with ID %s", connectionID)
@@ -123,7 +130,7 @@ func (c *Connection) PopInt(connectionID string) (val int) {
 
 //PopByte readbyte
 func (c *Connection) PopByte(connectionID string) (val int) {
-	log.Infof("Reading byte in conn with ID %s ", connectionID)
+	log.Tracef("Reading byte in conn with ID %s ", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
 		log.Warnf("Failed to read byte from conn with ID %s", connectionID)
@@ -136,7 +143,7 @@ func (c *Connection) PopByte(connectionID string) (val int) {
 
 //PushString TODO
 func (c *Connection) PushString(connectionID string, str string) {
-	log.Infof("Pushing string %s to %s buffers", str, connectionID)
+	log.Tracef("Pushing string %s to %s buffers", str, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
 		log.Warnf("Failed to write string conn with ID %s", connectionID)
@@ -148,7 +155,7 @@ func (c *Connection) PushString(connectionID string, str string) {
 
 //PushInt TODO
 func (c *Connection) PushInt(connectionID string, val int) {
-	log.Infof("Pushing int %d to %s buffers", val, connectionID)
+	log.Tracef("Pushing int %d to %s buffers", val, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
 		log.Warnf("Failed to write int conn with ID %s", connectionID)
@@ -160,7 +167,7 @@ func (c *Connection) PushInt(connectionID string, val int) {
 
 //PushByte TODO
 func (c *Connection) PushByte(connectionID string, val int) {
-	log.Infof("Pushing byte %d to %s buffers", val, connectionID)
+	log.Tracef("Pushing byte %d to %s buffers", val, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
 		log.Warnf("Failed to write byte conn with ID %s", connectionID)
@@ -172,7 +179,7 @@ func (c *Connection) PushByte(connectionID string, val int) {
 
 //ClearWriteBuffer TODO
 func (c *Connection) ClearWriteBuffer(connectionID string) {
-	log.Infof("Clearing %s write buffers", connectionID)
+	log.Tracef("Clearing %s write buffers", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
 		log.Warnf("Failed to clear writebuffer conn with ID %s", connectionID)
