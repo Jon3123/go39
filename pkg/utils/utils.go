@@ -1,10 +1,20 @@
 package utils
 
-import "math/rand"
+import (
+	"math/rand"
+	"time"
+)
+
+var init bool = false
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func randStringBytes(n int) string {
+	if init == false {
+		rand.Seed(time.Now().UnixNano())
+		init = true
+	}
+
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
