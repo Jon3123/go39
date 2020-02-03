@@ -30,6 +30,8 @@ func clientLoop(connection *go39.Connection) {
 	connection.PushByte(id, 22)
 	connection.PushString(id, "Hello from go client")
 	connection.PushInt(id, 31231)
+	connection.PushFloat32(id, 123.654)
+	connection.PushFloat64(id, -20321.33321)
 	connection.SendMessage(id)
 }
 func serverLoop(connection *go39.Connection) {
@@ -44,6 +46,8 @@ func readLoop(connection *go39.Connection, id string) {
 			fmt.Printf("read byte %d\n", connection.PopByte(id))
 			fmt.Printf("read string %s\n", connection.PopString(id))
 			fmt.Printf("read int %d\n", connection.PopInt(id))
+			fmt.Printf("read float32 %f\n", connection.PopFloat32(id))
+			fmt.Printf("read float64 %f\n", connection.PopFloat64(id))
 			connection.ClearWriteBuffer(id)
 			connection.PushByte(id, 22)
 			connection.PushInt(id, 2000)

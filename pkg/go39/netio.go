@@ -2,7 +2,9 @@ package go39
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
+	"math"
 )
 
 //NetIO network input/ output
@@ -29,6 +31,30 @@ func (n *NetIO) PushInt(value int32) {
 	n.PushByte(b2)
 	n.PushByte(b3)
 	n.PushByte(b4)
+}
+
+//PushFloat32 - push a float to buffer
+func (n *NetIO) PushFloat32(value float32) {
+	log.Debugf("Writing float 32 %f", value)
+	b := math.Float32bits(value)
+	n.PushByte(int32(b >> 24))
+	n.PushByte(int32(b >> 16))
+	n.PushByte(int32(b >> 8))
+	n.PushByte(int32(b))
+}
+
+//PushFloat64 - push a float64 to buffer
+func (n *NetIO) PushFloat64(value float64) {
+	log.Debugf("Writing float 64 %f", value)
+	b := math.Float64bits(value)
+	n.PushByte(int32(b >> 56))
+	n.PushByte(int32(b >> 48))
+	n.PushByte(int32(b >> 40))
+	n.PushByte(int32(b >> 32))
+	n.PushByte(int32(b >> 24))
+	n.PushByte(int32(b >> 16))
+	n.PushByte(int32(b >> 8))
+	n.PushByte(int32(b))
 }
 
 //PushString - push a string to the buffer
@@ -84,6 +110,34 @@ func (n *NetIO) PopString() string {
 		log.Warn(err)
 	}
 	return str
+}
+
+//PopFloat32 - read float32
+func (n *NetIO) PopFloat32() float32 {
+	var buf [4]byte
+
+	buf[0] = byte(n.PopByte())
+	buf[1] = byte(n.PopByte())
+	buf[2] = byte(n.PopByte())
+	buf[3] = byte(n.PopByte())
+	bits := binary.BigEndian.Uint32(buf[:])
+	return math.Float32frombits(bits)
+}
+
+//PopFloat64 - read float64
+func (n *NetIO) PopFloat64() float64 {
+	var buf [8]byte
+	buf[0] = byte(n.PopByte())
+	buf[1] = byte(n.PopByte())
+	buf[2] = byte(n.PopByte())
+	buf[3] = byte(n.PopByte())
+	buf[4] = byte(n.PopByte())
+	buf[5] = byte(n.PopByte())
+	buf[6] = byte(n.PopByte())
+	buf[7] = byte(n.PopByte())
+
+	bits := binary.BigEndian.Uint64(buf[:])
+	return math.Float64frombits(bits)
 }
 
 //ClearReadBuffer clear the read buffer

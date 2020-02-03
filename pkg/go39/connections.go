@@ -129,11 +129,10 @@ func (c *Connection) ReceiveMessage(connectionID string, timeout time.Duration) 
 	_, err = conn.netConnection.Read(b)
 	if err != nil {
 		if err.Error() == "EOF" {
+			//TODO Add some disconnect stuff possibly ??
 			return -1
 		}
 		log.Warnf("error reading from connection %s: %s", connectionID, err.Error())
-	} else {
-		fmt.Println("not nil")
 	}
 	reader := bytes.NewReader(b)
 	conn.netIO.ClearReadBuffer()
@@ -176,6 +175,34 @@ func (c *Connection) PopInt(connectionID string) (val int32) {
 	return
 }
 
+//PopFloat32 read float32
+func (c *Connection) PopFloat32(connectionID string) (val float32) {
+	log.Tracef("Reading float32 in conn with ID %s", connectionID)
+	conn, err := c.getConnection(connectionID)
+
+	if err != nil {
+		log.Warnf("Failed to read float from conn with ID %s", connectionID)
+		return
+	}
+
+	val = conn.netIO.PopFloat32()
+	return
+}
+
+//PopFloat64 read float 64
+func (c *Connection) PopFloat64(connectionID string) (val float64) {
+	log.Tracef("Reading float64 in conn with ID %s", connectionID)
+	conn, err := c.getConnection(connectionID)
+
+	if err != nil {
+		log.Warnf("Failed to read float from conn with ID %s", connectionID)
+		return
+	}
+
+	val = conn.netIO.PopFloat64()
+	return
+}
+
 //PopByte readbyte
 func (c *Connection) PopByte(connectionID string) (val int32) {
 	log.Tracef("Reading byte in conn with ID %s ", connectionID)
@@ -211,6 +238,32 @@ func (c *Connection) PushInt(connectionID string, val int32) {
 	}
 
 	conn.netIO.PushInt(val)
+}
+
+//PushFloat32 write float 32 to buffer
+func (c *Connection) PushFloat32(connectionID string, val float32) {
+	log.Tracef("Pushing float32 %f to %s buffers", val, connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf("Failed to write float32")
+		return
+	}
+
+	conn.netIO.PushFloat32(val)
+
+}
+
+//PushFloat64 write float 64 to buffer
+func (c *Connection) PushFloat64(connectionID string, val float64) {
+	log.Tracef("Pushing float64 %f to %s buffers", val, connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf("Failed to write float64")
+		return
+	}
+
+	conn.netIO.PushFloat64(val)
+
 }
 
 //PushByte write byte to buffer
