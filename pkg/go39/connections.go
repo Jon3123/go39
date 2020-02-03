@@ -14,6 +14,10 @@ import (
 
 var log = logrus.New()
 
+func configLogger() {
+	log.SetLevel(logrus.TraceLevel)
+}
+
 //ConnectionType type of connection the connection represents
 type ConnectionType int
 
@@ -38,6 +42,7 @@ type Connection struct {
 
 //NewConnection Create a new Connection
 func NewConnection() *Connection {
+	configLogger()
 	c := &Connection{
 		connectionID: utils.GenerateConnectionID(),
 	}
@@ -48,7 +53,6 @@ func NewConnection() *Connection {
 
 //TCPListen - listen
 func (c *Connection) TCPListen(host string, port int) {
-	log.SetLevel(logrus.DebugLevel)
 
 	l, err := net.Listen("tcp", host+":"+strconv.Itoa(port))
 
@@ -74,10 +78,11 @@ func (c *Connection) TCPAccept() (connectionID string) {
 	return
 }
 
+//Add tcp connection to map
 func (c *Connection) addConnectionTCP(connection net.Conn) (connectionID string) {
 
 	if c.connections == nil {
-		log.Fatal("Cannot add socket! the map is nil!")
+		log.Fatal("Cannot add connection! the map is nil!")
 	}
 
 	connectionID = utils.GenerateConnectionID()
@@ -87,6 +92,19 @@ func (c *Connection) addConnectionTCP(connection net.Conn) (connectionID string)
 		connectionID:   connectionID,
 		netConnection:  connection,
 	}
+	return
+}
+
+//Add self to connections map
+func (c *Connection) addSelfTCP() (connectionID string) {
+	log.Tracef("Adding self to map")
+	if c.connections == nil {
+		log.Fatal("Cannot add connection! the map is nil!")
+	}
+	connectionID = utils.GenerateConnectionID()
+	c.connectionID = connectionID
+	log.Tracef("Adding self with id %s", connectionID)
+	c.connections[connectionID] = c
 	return
 }
 
@@ -171,7 +189,7 @@ func (c *Connection) PopByte(connectionID string) (val int32) {
 	return
 }
 
-//PushString TODO
+//PushString Write a string to buffer
 func (c *Connection) PushString(connectionID string, str string) {
 	log.Tracef("Pushing string %s to %s buffers", str, connectionID)
 	conn, err := c.getConnection(connectionID)
@@ -231,5 +249,21 @@ func (c *Connection) SendMessage(connectionID string) {
 	if err != nil {
 		log.Warnf("error sending message %s", err.Error())
 	}
+}
 
+//TCPConnect connect to tcp server
+func (c *Connection) TCPConnect(ip string, port int) (connectionID string, err error) {
+	log.Tracef("TCP Connect %s:%d", ip, port)
+	netConn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
+
+	if err != nil {
+		log.Errorf("Failed to connect to %s:%d", ip, port)
+		return
+	}
+
+	c.netConnection = netConn
+	c.connectionType = TCPClient
+	c.addSelfTCP()
+	connectionID = c.connectionID
+	return
 }

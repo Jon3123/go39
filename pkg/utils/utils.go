@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-var init bool = false
+var rInit = false
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func randStringBytes(n int) string {
-	if init == false {
+	if rInit == false {
 		rand.Seed(time.Now().UnixNano())
-		init = true
+		rInit = true
 	}
 
 	b := make([]byte, n)
