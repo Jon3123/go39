@@ -1,4 +1,5 @@
 import socket
+import time
 # Buffers
 writingbuffer = bytearray()
 readingbuffer = bytearray()
@@ -115,7 +116,7 @@ def readint():
     number = bytearray(0)
     for x in range(4):
         number.append(readbyte())
-    return int.from_bytes(number, byteorder='little')
+    return int.from_bytes(number, byteorder='big')
 
 # Read a 2 byte integer from the reading buffer
 
@@ -138,10 +139,25 @@ def printbuffer():
     print(writingbuffer)
 
 
-sock = tcp_connect('127.0.0.1', 3223)
+if __name__ == '__main__':
+    sock = tcp_connect('127.0.0.1', 3223)
 
-clearbuffer()
-writebyte(255)
-writestring("HI this is a string")
-writeint(12345)
-sendmessage(sock)
+    clearbuffer()
+    writebyte(255)
+    writestring("HI this is a string")
+    writeint(12345)
+    sendmessage(sock)
+    count = 0
+    while True:
+        time.sleep(.2)
+        clearbuffer()
+        writebyte(count)
+        writestring("HI this is in loop")
+        writeint(12345)
+        sendmessage(sock)
+        print("hi")
+        count += 1
+        if (receivemessage(sock) > 0):
+            print(readbyte())
+            print(readint())
+            print(readstring())
