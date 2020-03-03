@@ -3,6 +3,7 @@ package go39
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"time"
@@ -14,8 +15,10 @@ import (
 
 var log = logrus.New()
 
-func configLogger() {
-	log.SetLevel(logrus.TraceLevel)
+//ConfigLogger config log
+func ConfigLogger(level logrus.Level, output io.Writer) {
+	log.SetLevel(level)
+	log.SetOutput(output)
 }
 
 //ConnectionType type of connection the connection represents
@@ -26,6 +29,8 @@ const (
 	TCPClient ConnectionType = 0
 	//TCPServer this is a server
 	TCPServer ConnectionType = 1
+	//UDP udp type
+	UDP ConnectionType = 2
 	//MaxTransmitSize max count of bytes you are allowed to send
 	MaxTransmitSize int = 1024
 )
@@ -42,7 +47,6 @@ type Connection struct {
 
 //NewConnection Create a new Connection
 func NewConnection() *Connection {
-	configLogger()
 	c := &Connection{
 		connectionID: utils.GenerateConnectionID(),
 	}
@@ -96,8 +100,8 @@ func (c *Connection) addConnectionTCP(connection net.Conn) (connectionID string)
 }
 
 //Add self to connections map
-func (c *Connection) addSelfTCP() (connectionID string) {
-	log.Tracef("Adding self to map")
+func (c *Connection) addSelf() (connectionID string) {
+	log.Tracef("Adding self to map ")
 	if c.connections == nil {
 		log.Fatal("Cannot add connection! the map is nil!")
 	}
@@ -316,7 +320,25 @@ func (c *Connection) TCPConnect(ip string, port int) (connectionID string, err e
 
 	c.netConnection = netConn
 	c.connectionType = TCPClient
-	c.addSelfTCP()
+	//add self to own map
+	c.addSelf()
+	connectionID = c.connectionID
+	return
+}
+
+//UDPConnect connect to udp
+func (c *Connection) UDPConnect(ip string, port int) (connectionID string, err error) {
+	log.Tracef("UDP Connect %s:%d", ip, port)
+	netConn, err := net.Dial("udp", fmt.Sprintf("%s:%d", ip, port))
+
+	if err != nil {
+		log.Errorf("Failed to connect to %s:%d", ip, port)
+		return
+	}
+
+	c.netConnection = netConn
+	c.connectionType = UDP
+	c.addSelf()
 	connectionID = c.connectionID
 	return
 }

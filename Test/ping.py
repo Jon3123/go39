@@ -155,7 +155,6 @@ if __name__ == '__main__':
         writestring("HI this is in loop")
         writeint(12345)
         sendmessage(sock)
-        print("hi")
         count += 1
         if (receivemessage(sock) > 0):
             print(readbyte())

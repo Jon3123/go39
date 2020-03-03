@@ -33,6 +33,14 @@ func clientLoop(connection *go39.Connection) {
 	connection.PushFloat32(id, 123.654)
 	connection.PushFloat64(id, -20321.33321)
 	connection.SendMessage(id)
+	for {
+		bytesRead := connection.ReceiveMessage(id, time.Second)
+		if bytesRead > 0 {
+			fmt.Printf("read byte %d\n", connection.PopByte(id))
+			fmt.Printf("read int %d\n", connection.PopInt(id))
+			fmt.Printf("read string %s\n", connection.PopString(id))
+		}
+	}
 }
 func serverLoop(connection *go39.Connection) {
 	connection.TCPListen("127.0.0.1", 3223)
@@ -55,7 +63,6 @@ func readLoop(connection *go39.Connection, id string) {
 			connection.SendMessage(id)
 		}
 
-		fmt.Println(bytesRead)
 		if bytesRead == -1 {
 			break
 		}
