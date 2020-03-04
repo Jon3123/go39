@@ -123,7 +123,7 @@ func (c *Connection) getConnection(connectionID string) (connection *Connection,
 
 //ReceiveMessage receives message from the connection with the given ID and set a timeout duration return -1 when disconnect
 func (c *Connection) ReceiveMessage(connectionID string, timeout time.Duration) (bytesRead int32) {
-	log.Tracef("Reading from connection with ID %s", connectionID)
+	log.Tracef("Reading from connection with ID %s\n", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
 		log.Fatalf("error getting connection: %s", err.Error())
@@ -135,6 +135,9 @@ func (c *Connection) ReceiveMessage(connectionID string, timeout time.Duration) 
 		if err.Error() == "EOF" {
 			//TODO Add some disconnect stuff possibly ??
 			return -1
+		}
+		if err.Error() == "i/o timeout" {
+			return 0
 		}
 		log.Warnf("error reading from connection %s: %s", connectionID, err.Error())
 	}

@@ -22,7 +22,7 @@ func randStringBytes(n int) string {
 	return string(b)
 }
 
-//GenerateConnectionID return a random connection id
+//GenerateConnectionID TODO return a random connection id
 func GenerateConnectionID() string {
 	return "conn-" + randStringBytes(10)
 }
