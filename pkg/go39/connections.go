@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Jon3123/go39/pkg/utils"
@@ -136,7 +137,8 @@ func (c *Connection) ReceiveMessage(connectionID string, timeout time.Duration) 
 			//TODO Add some disconnect stuff possibly ??
 			return -1
 		}
-		if err.Error() == "i/o timeout" {
+
+		if strings.Contains(err.Error(), "i/o timeout") {
 			return 0
 		}
 		log.Warnf("error reading from connection %s: %s", connectionID, err.Error())
