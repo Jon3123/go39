@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Jon3123/go39/pkg/utils"
@@ -39,6 +40,7 @@ const (
 //Connection to fill out later
 type Connection struct {
 	netIO          NetIO
+	mux            sync.Mutex
 	socket         net.Listener
 	netConnection  net.Conn
 	connectionType ConnectionType
@@ -81,6 +83,16 @@ func (c *Connection) TCPAccept() (connectionID string) {
 	log.Info("New Connection")
 	connectionID = c.addConnectionTCP(ln)
 	return
+}
+
+//StartWrite start a write to lock buffer
+func (c *Connection) StartWrite() {
+	c.mux.Lock()
+}
+
+//EndWrite to end write to allow other go rountines to have access
+func (c *Connection) EndWrite() {
+	c.mux.Unlock()
 }
 
 //Add tcp connection to map
