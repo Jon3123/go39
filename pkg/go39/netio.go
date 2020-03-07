@@ -109,7 +109,8 @@ func (n *NetIO) PopString() string {
 		log.Warn("Read string failed")
 		log.Warn(err)
 	}
-	return str
+	return str[0 : len(str)-1] //the read string func is gonna include the null terminated case in the returned string
+	//it is something that is not visibile but is in the actual string which will mess up regex expressions
 }
 
 //PopFloat32 - read float32

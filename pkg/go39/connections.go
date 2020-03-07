@@ -40,7 +40,8 @@ const (
 //Connection to fill out later
 type Connection struct {
 	netIO          NetIO
-	mux            sync.Mutex
+	writeMux       sync.Mutex
+	readMux        sync.Mutex
 	socket         net.Listener
 	netConnection  net.Conn
 	connectionType ConnectionType
@@ -79,20 +80,37 @@ func (c *Connection) TCPAccept() (connectionID string) {
 		log.Warn("FAILED TO ACCEPT SOCKET")
 		return
 	}
-	log.Info(ln)
 	log.Info("New Connection")
 	connectionID = c.addConnectionTCP(ln)
 	return
 }
 
 //StartWrite start a write to lock buffer
-func (c *Connection) StartWrite() {
-	c.mux.Lock()
+func (c *Connection) StartWrite(connectionID string) {
+	if val, ok := c.connections[connectionID]; ok {
+		val.writeMux.Lock()
+	}
 }
 
 //EndWrite to end write to allow other go rountines to have access
-func (c *Connection) EndWrite() {
-	c.mux.Unlock()
+func (c *Connection) EndWrite(connectionID string) {
+	if val, ok := c.connections[connectionID]; ok {
+		val.writeMux.Unlock()
+	}
+}
+
+//StartRead start a read to lock buffer
+func (c *Connection) StartRead(connectionID string) {
+	if val, ok := c.connections[connectionID]; ok {
+		val.readMux.Lock()
+	}
+}
+
+//EndRead start a read to lock buffer
+func (c *Connection) EndRead(connectionID string) {
+	if val, ok := c.connections[connectionID]; ok {
+		val.readMux.Unlock()
+	}
 }
 
 //Add tcp connection to map
@@ -358,4 +376,10 @@ func (c *Connection) UDPConnect(ip string, port int) (connectionID string, err e
 	c.addSelf()
 	connectionID = c.connectionID
 	return
+}
+
+//CloseConnection close connection
+func (c *Connection) CloseConnection(connectionID string) {
+	c.connections[connectionID].netConnection.Close()
+	delete(c.connections, connectionID)
 }
