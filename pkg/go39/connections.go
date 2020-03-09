@@ -157,7 +157,9 @@ func (c *Connection) ReceiveMessage(connectionID string, timeout time.Duration) 
 	log.Tracef("Reading from connection with ID %s\n", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Fatalf("error getting connection: %s", err.Error())
+		return
 	}
 	b := make([]byte, MaxTransmitSize)
 	conn.netConnection.SetReadDeadline(time.Now().Add(timeout))
@@ -193,6 +195,7 @@ func (c *Connection) PopString(connectionID string) (str string) {
 	log.Tracef("Reading string in conn with ID %s ", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to read string from conn with ID %s", connectionID)
 		return
 	}
@@ -206,6 +209,7 @@ func (c *Connection) PopInt(connectionID string) (val int32) {
 	log.Tracef("Reading int in conn with ID %s ", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to read int from conn with ID %s", connectionID)
 		return
 	}
@@ -220,6 +224,7 @@ func (c *Connection) PopFloat32(connectionID string) (val float32) {
 	conn, err := c.getConnection(connectionID)
 
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to read float from conn with ID %s", connectionID)
 		return
 	}
@@ -234,6 +239,7 @@ func (c *Connection) PopFloat64(connectionID string) (val float64) {
 	conn, err := c.getConnection(connectionID)
 
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to read float from conn with ID %s", connectionID)
 		return
 	}
@@ -247,6 +253,7 @@ func (c *Connection) PopByte(connectionID string) (val int32) {
 	log.Tracef("Reading byte in conn with ID %s ", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to read byte from conn with ID %s", connectionID)
 		return
 	}
@@ -260,6 +267,7 @@ func (c *Connection) PushString(connectionID string, str string) {
 	log.Tracef("Pushing string %s to %s buffers", str, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to write string conn with ID %s", connectionID)
 		return
 	}
@@ -272,6 +280,7 @@ func (c *Connection) PushInt(connectionID string, val int32) {
 	log.Tracef("Pushing int %d to %s buffers", val, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to write int conn with ID %s", connectionID)
 		return
 	}
@@ -284,6 +293,7 @@ func (c *Connection) PushFloat32(connectionID string, val float32) {
 	log.Tracef("Pushing float32 %f to %s buffers", val, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to write float32")
 		return
 	}
@@ -297,6 +307,7 @@ func (c *Connection) PushFloat64(connectionID string, val float64) {
 	log.Tracef("Pushing float64 %f to %s buffers", val, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to write float64")
 		return
 	}
@@ -310,6 +321,7 @@ func (c *Connection) PushByte(connectionID string, val int32) {
 	log.Tracef("Pushing byte %d to %s buffers", val, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to write byte conn with ID %s", connectionID)
 		return
 	}
@@ -322,6 +334,7 @@ func (c *Connection) ClearWriteBuffer(connectionID string) {
 	log.Tracef("Clearing %s write buffers", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
+		log.Warnf(err.Error())
 		log.Warnf("Failed to clear writebuffer conn with ID %s", connectionID)
 		return
 	}
@@ -335,11 +348,13 @@ func (c *Connection) SendMessage(connectionID string) {
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
 		log.Warnf("Failed to send message to %s", connectionID)
+		return
 	}
 	conn.netIO.PrepWriteBuffer()
 	_, err = conn.netConnection.Write(conn.netIO.writeBuffer.Bytes())
 	if err != nil {
 		log.Warnf("error sending message %s", err.Error())
+		return
 	}
 }
 
