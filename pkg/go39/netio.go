@@ -19,6 +19,16 @@ func (n *NetIO) PushByte(value int32) {
 	n.writeBuffer.WriteByte(byte(value & 0xFF))
 }
 
+//PushShort push a short onto the buffer
+func (n *NetIO) PushShort(value int32) {
+	log.Debugf("Writing short %d", value)
+	b1 := (value >> 8) & 0xFF
+	b2 := (value & 0xFF)
+
+	n.PushByte(b1)
+	n.PushByte(b2)
+}
+
 //PushInt - push an int to the buffer
 func (n *NetIO) PushInt(value int32) {
 	log.Debugf("Writing int %d", value)
@@ -88,6 +98,16 @@ func (n *NetIO) PopByte() int32 {
 		log.Warn("Read byte failed")
 	}
 	return int32(val)
+}
+
+//PopShort - Read short
+func (n *NetIO) PopShort() int32 {
+	b1 := (n.PopByte() & 0xFF) << 8
+	b2 := (n.PopByte() & 0xFF)
+
+	res := b1 | b2
+
+	return res
 }
 
 //PopInt - read int

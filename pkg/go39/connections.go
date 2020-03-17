@@ -218,6 +218,20 @@ func (c *Connection) PopInt(connectionID string) (val int32) {
 	return
 }
 
+//PopShort Readshort
+func (c *Connection) PopShort(connectionID string) (val int32) {
+	log.Tracef("Reading short in conn with ID %s ", connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf(err.Error())
+		log.Warnf("Failed to read short from conn with ID %s", connectionID)
+		return
+	}
+
+	val = conn.netIO.PopShort()
+	return
+}
+
 //PopFloat32 read float32
 func (c *Connection) PopFloat32(connectionID string) (val float32) {
 	log.Tracef("Reading float32 in conn with ID %s", connectionID)
@@ -286,6 +300,19 @@ func (c *Connection) PushInt(connectionID string, val int32) {
 	}
 
 	conn.netIO.PushInt(val)
+}
+
+//PushShort write int to buffer
+func (c *Connection) PushShort(connectionID string, val int32) {
+	log.Tracef("Pushing short %d to %s buffers", val, connectionID)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf(err.Error())
+		log.Warnf("Failed to short int conn with ID %s", connectionID)
+		return
+	}
+
+	conn.netIO.PushShort(val)
 }
 
 //PushFloat32 write float 32 to buffer
