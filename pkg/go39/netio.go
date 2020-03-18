@@ -22,8 +22,8 @@ func (n *NetIO) PushByte(value int32) {
 //PushShort push a short onto the buffer
 func (n *NetIO) PushShort(value int32) {
 	log.Debugf("Writing short %d", value)
-	b1 := (value >> 8) & 0xFF
-	b2 := (value & 0xFF)
+	b1 := (value) & 0xFF
+	b2 := (value >> 8 & 0xFF)
 
 	n.PushByte(b1)
 	n.PushByte(b2)
@@ -102,10 +102,10 @@ func (n *NetIO) PopByte() int32 {
 
 //PopShort - Read short
 func (n *NetIO) PopShort() int32 {
-	b1 := (n.PopByte() & 0xFF) << 8
-	b2 := (n.PopByte() & 0xFF)
+	b1 := (n.PopByte() & 0xFF)
+	b2 := (n.PopByte() & 0xFF) << 8 //weird idk to match what gm does
 
-	res := b1 | b2
+	res := (b1 | b2) & 0xFFFF
 
 	return res
 }
@@ -174,4 +174,10 @@ func (n *NetIO) PrepWriteBuffer() {
 	n.PushByte(int32(len(s)))
 	n.PushByte(0)
 	n.writeBuffer.WriteString(s) //To prevent null terminating char that is in push string func
+}
+
+//SkipBytes skip the amount of bytes in read buffer
+func (n *NetIO) SkipBytes(count int32) {
+	buf := make([]byte, count)
+	n.readBuffer.Read(buf)
 }

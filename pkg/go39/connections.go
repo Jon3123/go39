@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/Jon3123/go39/pkg/utils"
 
@@ -152,8 +151,8 @@ func (c *Connection) getConnection(connectionID string) (connection *Connection,
 	return
 }
 
-//ReceiveMessage receives message from the connection with the given ID and set a timeout duration return -1 when disconnect
-func (c *Connection) ReceiveMessage(connectionID string, timeout time.Duration) (bytesRead int32) {
+//ReceiveMessage receives message from the connection with the given ID return -1 when disconnect
+func (c *Connection) ReceiveMessage(connectionID string) (bytesRead int32) {
 	log.Tracef("Reading from connection with ID %s\n", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
@@ -162,9 +161,9 @@ func (c *Connection) ReceiveMessage(connectionID string, timeout time.Duration) 
 		return
 	}
 	b := make([]byte, MaxTransmitSize)
-	conn.netConnection.SetReadDeadline(time.Now().Add(timeout))
 	_, err = conn.netConnection.Read(b)
 	if err != nil {
+		fmt.Println(err)
 		if err.Error() == "EOF" {
 			//TODO Add some disconnect stuff possibly ??
 			return -1
@@ -354,6 +353,18 @@ func (c *Connection) PushByte(connectionID string, val int32) {
 	}
 
 	conn.netIO.PushByte(val)
+}
+
+//SkipBytes skip the amount of bytes in read buffer
+func (c *Connection) SkipBytes(connectionID string, count int32) {
+	log.Tracef("skipping %d bytes", count)
+	conn, err := c.getConnection(connectionID)
+	if err != nil {
+		log.Warnf(err.Error())
+		log.Warnf("Failed to skip bytes conn with ID %s", connectionID)
+		return
+	}
+	conn.netIO.SkipBytes(count)
 }
 
 //ClearWriteBuffer clear
