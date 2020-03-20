@@ -32,10 +32,10 @@ func (n *NetIO) PushShort(value int32) {
 //PushInt - push an int to the buffer
 func (n *NetIO) PushInt(value int32) {
 	log.Debugf("Writing int %d", value)
-	b1 := (value >> 24) & 0xFF
-	b2 := (value >> 16) & 0xFF
-	b3 := (value >> 8) & 0xFF
-	b4 := (value & 0xFF)
+	b4 := (value >> 24) & 0xFF
+	b3 := (value >> 16) & 0xFF
+	b2 := (value >> 8) & 0xFF
+	b1 := (value & 0xFF)
 
 	n.PushByte(b1)
 	n.PushByte(b2)
@@ -171,7 +171,7 @@ func (n *NetIO) ClearReadBuffer() {
 func (n *NetIO) PrepWriteBuffer() {
 	s := n.writeBuffer.String()
 	n.writeBuffer.Reset()
-	n.PushByte(int32(len(s)))
+	n.PushInt(int32(len(s)))
 	n.PushByte(0)
 	n.writeBuffer.WriteString(s) //To prevent null terminating char that is in push string func
 }

@@ -183,7 +183,7 @@ func (c *Connection) ReceiveMessage(connectionID string) (bytesRead int32) {
 
 	}
 
-	bytesRead = c.PopByte(connectionID)
+	bytesRead = c.PopInt(connectionID)
 	c.PopByte(connectionID)
 
 	return
