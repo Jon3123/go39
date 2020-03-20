@@ -180,7 +180,7 @@ func (c *Connection) ReceiveMessage(connectionID string) (bytesRead int32) {
 	_, err = conn.netIO.readBuffer.ReadFrom(reader)
 	if err != nil {
 		log.Warnf("error while reading %s: %s", connectionID, err.Error())
-
+		return
 	}
 
 	bytesRead = c.PopInt(connectionID)
