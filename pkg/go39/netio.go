@@ -95,7 +95,7 @@ func (n *NetIO) Copy() {
 func (n *NetIO) PopByte() int32 {
 	val, err := n.readBuffer.ReadByte()
 	if err != nil {
-		log.Warn("Read byte failed")
+		log.Warn("Read byte failed ", err)
 	}
 	return int32(val)
 }

@@ -2,6 +2,7 @@ package go39
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
@@ -38,7 +39,8 @@ const (
 
 //Connection to fill out later
 type Connection struct {
-	netIO          NetIO
+	netIO          *NetIO
+	mapMut         sync.RWMutex
 	writeMux       sync.Mutex
 	readMux        sync.Mutex
 	socket         net.Listener
@@ -54,6 +56,7 @@ func NewConnection() *Connection {
 		connectionID: utils.GenerateConnectionID(),
 	}
 	c.connections = make(map[string]*Connection)
+	c.netIO = &NetIO{}
 	c.connections[c.connectionID] = c
 	return c
 }
@@ -86,6 +89,8 @@ func (c *Connection) TCPAccept() (connectionID string) {
 
 //StartWrite start a write to lock buffer
 func (c *Connection) StartWrite(connectionID string) {
+	c.mapMut.RLock()
+	defer c.mapMut.RUnlock()
 	if val, ok := c.connections[connectionID]; ok {
 		val.writeMux.Lock()
 	}
@@ -93,6 +98,8 @@ func (c *Connection) StartWrite(connectionID string) {
 
 //EndWrite to end write to allow other go rountines to have access
 func (c *Connection) EndWrite(connectionID string) {
+	c.mapMut.RLock()
+	defer c.mapMut.RUnlock()
 	if val, ok := c.connections[connectionID]; ok {
 		val.writeMux.Unlock()
 	}
@@ -100,6 +107,8 @@ func (c *Connection) EndWrite(connectionID string) {
 
 //StartRead start a read to lock buffer
 func (c *Connection) StartRead(connectionID string) {
+	c.mapMut.RLock()
+	defer c.mapMut.RUnlock()
 	if val, ok := c.connections[connectionID]; ok {
 		val.readMux.Lock()
 	}
@@ -107,6 +116,8 @@ func (c *Connection) StartRead(connectionID string) {
 
 //EndRead start a read to lock buffer
 func (c *Connection) EndRead(connectionID string) {
+	c.mapMut.RLock()
+	defer c.mapMut.RUnlock()
 	if val, ok := c.connections[connectionID]; ok {
 		val.readMux.Unlock()
 	}
@@ -121,11 +132,14 @@ func (c *Connection) addConnectionTCP(connection net.Conn) (connectionID string)
 
 	connectionID = utils.GenerateConnectionID()
 	log.Tracef("Adding socket with id %s", connectionID)
+	c.mapMut.Lock()
 	c.connections[connectionID] = &Connection{
 		connectionType: TCPClient,
 		connectionID:   connectionID,
 		netConnection:  connection,
+		netIO:          &NetIO{},
 	}
+	c.mapMut.Unlock()
 	return
 }
 
@@ -138,11 +152,15 @@ func (c *Connection) addSelf() (connectionID string) {
 	connectionID = utils.GenerateConnectionID()
 	c.connectionID = connectionID
 	log.Tracef("Adding self with id %s", connectionID)
+	c.mapMut.Lock()
 	c.connections[connectionID] = c
+	c.mapMut.Unlock()
 	return
 }
 
 func (c *Connection) getConnection(connectionID string) (connection *Connection, err error) {
+	c.mapMut.RLock()
+	defer c.mapMut.RUnlock()
 	if val, ok := c.connections[connectionID]; ok {
 		connection = val
 		return
@@ -152,7 +170,7 @@ func (c *Connection) getConnection(connectionID string) (connection *Connection,
 }
 
 //ReceiveMessage receives message from the connection with the given ID return -1 when disconnect
-func (c *Connection) ReceiveMessage(connectionID string) (bytesRead int32) {
+func (c *Connection) ReceiveMessage(connectionID string) (n *NetIO, bytesRead int32) {
 	log.Tracef("Reading from connection with ID %s\n", connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
@@ -160,31 +178,37 @@ func (c *Connection) ReceiveMessage(connectionID string) (bytesRead int32) {
 		log.Fatalf("error getting connection: %s", err.Error())
 		return
 	}
-	b := make([]byte, MaxTransmitSize)
-	_, err = conn.netConnection.Read(b)
+	b := make([]byte, 4)
+	read, err := conn.netConnection.Read(b)
+	if read != 4 {
+		return nil, -1
+	}
+	bytesRead = int32(binary.BigEndian.Uint32(b))
+
 	if err != nil {
 		fmt.Println(err)
 		if err.Error() == "EOF" {
 			//TODO Add some disconnect stuff possibly ??
-			return -1
+			return nil, -1
 		}
 
 		if strings.Contains(err.Error(), "i/o timeout") {
-			return 0
+			return nil, 0
 		}
 		log.Warnf("error reading from connection %s: %s", connectionID, err.Error())
 	}
+	b = make([]byte, bytesRead+1)
+	_, err = conn.netConnection.Read(b)
 	reader := bytes.NewReader(b)
-	conn.netIO.ClearReadBuffer()
+	n = &NetIO{}
+	n.ClearReadBuffer()
 
-	_, err = conn.netIO.readBuffer.ReadFrom(reader)
+	_, err = n.readBuffer.ReadFrom(reader)
 	if err != nil {
 		log.Warnf("error while reading %s: %s", connectionID, err.Error())
 		return
 	}
-
-	bytesRead = c.PopInt(connectionID)
-	c.PopByte(connectionID)
+	n.PopByte()
 
 	return
 }
@@ -433,6 +457,8 @@ func (c *Connection) UDPConnect(ip string, port int) (connectionID string, err e
 
 //CloseConnection close connection
 func (c *Connection) CloseConnection(connectionID string) {
+	c.mapMut.Lock()
+	defer c.mapMut.Unlock()
 	c.connections[connectionID].netConnection.Close()
 	delete(c.connections, connectionID)
 }
