@@ -51,7 +51,6 @@ func (n *NetIO) PushFloat32(value float32) {
 	b3 := int32(b>>16) & 0xFF
 	b2 := int32(b>>8) & 0xFF
 	b1 := int32(b & 0xFF)
-	fmt.Println(b4, b3, b2, b1)
 	n.PushByte(b1)
 	n.PushByte(b2)
 	n.PushByte(b3)
