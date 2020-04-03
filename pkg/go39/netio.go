@@ -46,7 +46,6 @@ func (n *NetIO) PushInt(value int32) {
 //PushFloat32 - push a float to buffer
 func (n *NetIO) PushFloat32(value float32) {
 	log.Debugf("Writing float 32 %f", value)
-	fmt.Println("IM HERE")
 	b := math.Float32bits(value)
 	b4 := int32(b>>24) & 0xFF
 	b3 := int32(b>>16) & 0xFF
