@@ -314,6 +314,7 @@ func (c *Connection) PushString(connectionID string, str string) {
 
 //PushInt write int to buffer
 func (c *Connection) PushInt(connectionID string, val int32) {
+	fmt.Println("PUSHINGGG")
 	log.Tracef("Pushing int %d to %s buffers", val, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
@@ -340,6 +341,7 @@ func (c *Connection) PushShort(connectionID string, val int32) {
 
 //PushFloat32 write float 32 to buffer
 func (c *Connection) PushFloat32(connectionID string, val float32) {
+	fmt.Println("PUSHINGGG")
 	log.Tracef("Pushing float32 %f to %s buffers", val, connectionID)
 	conn, err := c.getConnection(connectionID)
 	if err != nil {
